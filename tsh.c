@@ -1,7 +1,8 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * <Put your name and ID here>
+ * <Daniel Boules dboul001 862138399>
+ * 
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -231,6 +232,31 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+    char comp[sizeof(argv[0])];
+    strcpy(comp,argv[0]);
+    char quitCMD[4] = "quit";
+    char fg[2] = "fg";
+    char bg[2] = "bg";
+    char jobsCMD[4] = "jobs";
+    if(comp == quitCMD)
+    {
+        exit(0);
+    }
+    if(comp == jobsCMD)
+    {
+        listjobs(jobs);
+        return(1);
+    }
+    if(comp == fg)
+    {
+        do_bgfg(argv);
+        return(1);
+    }
+    if(comp == bg)
+    {
+        do_bgfg(argv);
+        return(1);
+    }
     return 0;     /* not a builtin command */
 }
 
@@ -273,6 +299,11 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+    pid_t foreground = fgpid(jobs);
+    if(foreground)
+    {
+        kill(-foreground,SIGINT);
+    }
     return;
 }
 
@@ -283,6 +314,13 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
+    pid_t foreground = fgpid(jobs);
+    if(foreground)
+    {
+        kill(-foreground,SIGTSTP);
+        struct job_t *nextJob = getjobpid(jobs,foreground);
+        (*nextJob).state = ST;
+    }
     return;
 }
 
